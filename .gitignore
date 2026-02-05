@@ -15,4 +15,5 @@ chroma/
 *.faiss
 *.npy
 data/
+chroma_store*/
 

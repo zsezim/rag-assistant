@@ -4,7 +4,8 @@ import os
 @dataclass(frozen=True)
 class Settings:
     # Vector storage
-    persist_dir: str = os.getenv("RAG_CHROMA_DIR", "chroma_store")
+    persist_dir: str = os.getenv("RAG_CHROMA_DIR", "chroma_store_v2")
+    
     collection_name: str = os.getenv("RAG_COLLECTION", "docs")
 
     # Embeddings
