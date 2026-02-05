@@ -22,4 +22,7 @@ class Settings:
     # Retrieval
     top_k: int = int(os.getenv("RAG_TOP_K", "5"))
 
+    # Chunking
+    chunk_size: int = int(os.getenv("RAG_CHUNK_SIZE", "1000"))
+    chunk_overlap: int = int(os.getenv("RAG_CHUNK_OVERLAP", "150"))
 settings = Settings()

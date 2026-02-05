@@ -15,29 +15,36 @@ load_dotenv()
 from rag_assistant.ingest import ingest_pdf, collection_count
 from rag_assistant.rag import RAG
 
+import traceback
+from pathlib import Path
+import shutil
+import tempfile
 
-def ingest_ui(pdf_file) -> str:
-    if pdf_file is None:
-        return "Upload a PDF first."
+def ingest_ui(pdf_path: str) -> str:
+    try:
+        if not pdf_path:
+            return "Upload a PDF first."
+        if not str(pdf_path).lower().endswith(".pdf"):
+            return "Please upload a PDF file."
 
-    src_path = getattr(pdf_file, "name", None)
-    if not src_path or not str(src_path).lower().endswith(".pdf"):
-        return "Please upload a PDF file."
+        # copy into temp to avoid any gradio temp-file edge cases
+        with tempfile.TemporaryDirectory() as td:
+            dst = Path(td) / Path(pdf_path).name
+            shutil.copyfile(pdf_path, dst)
 
-    with tempfile.TemporaryDirectory() as td:
-        dst_path = Path(td) / Path(src_path).name
-        shutil.copyfile(src_path, dst_path)
+            result = ingest_pdf(str(dst), overwrite=True)
 
-        try:
-            result = ingest_pdf(str(dst_path), overwrite=True)
-        except Exception as e:
-            return f"Ingest failed: {e}"
+        # Return ONLY plain text
+        return (
+            f"Ingested {result['filename']} | pages={result['pages']} | "
+            f"chunks={result['chunks']} | doc_id={result['doc_id']} | "
+            f"indexed_chunks_total={collection_count()}"
+        )
 
-    return (
-        f"Ingested {result['filename']} | pages={result['pages']} | "
-        f"chunks={result['chunks']} | doc_id={result['doc_id']} | "
-        f"indexed_chunks_total={collection_count()}"
-    )
+    except Exception as e:
+        print("INGEST ERROR:", repr(e))
+        traceback.print_exc()
+        return f"Ingest failed: {e!r}"
 
 
 def chat_ui(message: str, history):
@@ -70,13 +77,10 @@ def chat_ui(message: str, history):
 
 
 with gr.Blocks(title="RAG Assistant (PDF)") as demo:
-    gr.Markdown(
-        "# RAG Assistant (PDF)\n"
-        "Upload a PDF, click **Ingest / Re-ingest**, then ask questions grounded in that document."
-    )
+    gr.Markdown("# RAG Assistant (PDF)\nUpload a PDF, then ask questions grounded in it.")
 
     with gr.Row():
-        pdf = gr.File(label="Upload PDF", file_types=[".pdf"])
+        pdf = gr.File(label="Upload PDF", file_types=[".pdf"], type="filepath")
         btn = gr.Button("Ingest / Re-ingest")
 
     status = gr.Textbox(label="Status", interactive=False)

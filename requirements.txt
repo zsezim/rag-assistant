@@ -5,10 +5,11 @@ python-dotenv
 langchain
 langchain-community
 langchain-text-splitters
+langchain-huggingface
+langchain-chroma
 transformers>=4.40.0
 sentence-transformers>=2.6.0
 torch>=2.0.0
-faiss-cpu
 chromadb
 huggingface-hub
 ragas
@@ -18,5 +19,4 @@ fastapi
 uvicorn
 pydantic
 requests
-rich
-
+together

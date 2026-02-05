@@ -1,31 +1,48 @@
 from __future__ import annotations
+
+from dataclasses import dataclass
 from typing import List, Optional
+
 from langchain_core.documents import Document
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from .settings import settings
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
+
+from rag_assistant.settings import settings
 
 
+@dataclass
 class Retriever:
-    """
-    Wraps a vector store retriever.
-    Uses Chroma as the vector store and 
-    HuggingFaceEmbeddings for embeddings.
-    """
-    def __init__(self, persist_dir: Optional[str] = None, collection_name: Optional[str] = None):
-        self.persist_dir = persist_dir or settings.persist_dir
-        self.collection_name = collection_name or settings.collection_name
+    vectordb: Chroma
 
-        self._emb = HuggingFaceEmbeddings(model_name=settings.embedding_model)
-
-        self._vs = Chroma(
-            collection_name=self.collection_name,
-            persist_directory=self.persist_dir,
-            embedding_function=self._emb,
+    @classmethod
+    def from_settings(cls) -> "Retriever":
+        emb = HuggingFaceEmbeddings(model_name=settings.embedding_model)
+        vectordb = Chroma(
+            collection_name=settings.collection_name,
+            persist_directory=settings.persist_dir,
+            embedding_function=emb,
         )
+        return cls(vectordb=vectordb)
 
-        self._retriever = self._vs.as_retriever(search_kwargs={"k": settings.top_k})
+    def retrieve(
+        self,
+        query: str,
+        k: Optional[int] = None,
+        filename: Optional[str] = None,
+        page: Optional[int] = None,
+        doc_id: Optional[str] = None,
+    ) -> List[Document]:
+        where = {}
+        if filename:
+            where["filename"] = filename
+        if page is not None:
+            where["page"] = page
+        if doc_id:
+            where["doc_id"] = doc_id
 
-    def retrieve(self, query: str) -> List[Document]:
-        """Return top-k documents for a query."""
-        return self._retriever.invoke(query)
+        search_kwargs = {"k": k or settings.top_k}
+        if where:
+            search_kwargs["filter"] = where  
+
+        retriever = self.vectordb.as_retriever(search_kwargs=search_kwargs)
+        return retriever.invoke(query)

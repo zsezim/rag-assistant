@@ -1,55 +1,62 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from __future__ import annotations
-from settings import settings
+import os
 from typing import List
+from together import Together
 from langchain_core.documents import Document
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_community.llms import HuggingFacePipeline
 
 
 def _format_context(docs: List[Document]) -> str:
-    parts = []
+    """Format retrieved docs into a numbered context block with sources for citation."""
+    parts: list[str] = []
     for i, d in enumerate(docs, start=1):
-        src = d.metadata.get("source", "unknown")
+        src = (d.metadata or {}).get("source", "unknown")
         parts.append(f"[{i}] (source: {src})\n{d.page_content}")
     return "\n\n".join(parts)
 
 
 class Generator:
     """
-    Uses a local HuggingFace model via the transformers pipeline.
+    Generator backed by Together AI (hosted open-source LLMs).
+    
     """
-    def __init__(self):
-        tok = AutoTokenizer.from_pretrained(settings.llm_model, use_fast=True)
-        model = AutoModelForCausalLM.from_pretrained(
-            settings.llm_model,
-            device_map="auto",     
-            torch_dtype="auto",
+
+    def __init__(self) -> None:
+        api_key = os.getenv("TOGETHER_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "Missing TOGETHER_API_KEY. Set it in your environment or .env file."
+            )
+
+        self.model = os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        self.client = Together(api_key=api_key)
+
+        # System prompt: keep it strict about grounding + citations.
+        self.system_prompt = (
+            "You are a helpful assistant. Answer only using the provided context. "
+            "If the answer isn't in the context, say you don't know. "
+            "When you use facts from the context, add brief citations like [1], [2]."
         )
-
-        gen_pipe = pipeline(
-            "text-generation",
-            model=model,
-            tokenizer=tok,
-            max_new_tokens=256,
-            do_sample=False,
-            temperature=0.2,
-            return_full_text=False,
-        )
-
-        self.llm = HuggingFacePipeline(pipeline=gen_pipe)
-
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system",
-             "You are a helpful assistant. Answer ONLY using the provided context. "
-             "If the answer isn't in the context, say you don't know."),
-            ("human",
-             "Question:\n{question}\n\nContext:\n{context}\n\nAnswer (with brief citations like [1], [2]):")
-        ])
-
-        self.chain = self.prompt | self.llm | StrOutputParser()
 
     def generate(self, question: str, docs: List[Document]) -> str:
         context = _format_context(docs)
-        return self.chain.invoke({"question": question, "context": context})
+
+        messages = [
+            {"role": "system", "content": self.system_prompt},
+            {
+                "role": "user",
+                "content": (
+                    f"Question:\n{question}\n\n"
+                    f"Context:\n{context}\n\n"
+                    "Answer (with brief citations like [1], [2]):"
+                ),
+            },
+        ]
+
+        resp = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=0.2,
+            max_tokens=512,
+        )
+
+        return resp.choices[0].message.content.strip()
