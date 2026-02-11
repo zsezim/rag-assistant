@@ -3,7 +3,7 @@
 Live Demo: https://huggingface.co/spaces/zsezim/ardenture-rag
 
 Demo is private to limit API usage. 
-Please request access on HuggingFace if you'd like to use it!
+Please request access if you'd like to use it!
 
 I made a production-style Retrieval-Augmented Generation (RAG) application that allows users to upload PDFs and ask questions grounded in the document content. The RAG performs semantic retrieval over document chunks and generates answers using an LLM hosted via Together AI. The UI is built with Gradio and deployed on Hugging Face Spaces.
 
