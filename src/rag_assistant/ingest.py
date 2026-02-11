@@ -75,7 +75,7 @@ def ingest_pdf(pdf_path: str, overwrite: bool = False) -> dict:
     chunks = _add_chunk_ids(chunks, doc_id=doc_id, filename=filename)
 
     vectordb.add_documents(chunks)
-    vectordb.persist()
+    #vectordb.persist()
 
     return {
         "filename": filename,
