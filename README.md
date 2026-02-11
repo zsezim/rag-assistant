@@ -1,6 +1,7 @@
-
+# Ardenture RAG
 
 Live Demo: https://huggingface.co/spaces/zsezim/ardenture-rag
+
 Demo is private to limit API usage. 
 Please request access on HuggingFace if you'd like to use it!
 
@@ -33,11 +34,11 @@ rag-assistant/
 ```
 
 ## Example use cases:
-Financial reports querying
-Legal documents semantic assistant
-Internal documentation search
-Client-facing document assistants
-Other confidential docs
+- Financial reports querying
+- Legal documents semantic assistant
+- Internal documentation search
+- Client-facing document assistants
+- Other confidential docs
 
 ## Local setup:
 1. Clone the repo
@@ -65,13 +66,14 @@ TOGETHER_MODEL=meta-llama/Llama-3.3-70B-Instruct-Turbo
 python app.py
 ```
 ## Future improvements:
-Multi-document ingestion per session
-Metadata filtering UI (page number, section)
-Authentication (per-user storage)
+- Multi-document ingestion per session
+- Metadata filtering UI (page number, section)
+- Authentication (per-user storage)
 
 ## Author:
-Sezim Zamirbekova Kaplan
+**Sezim Zamirbekova Kaplan**
 
 Technical Data Scientist
-GitHub: https://github.com/zsezim
-Hugging Face: https://huggingface.co/zsezim
+
+- GitHub: https://github.com/zsezim
+- Hugging Face: https://huggingface.co/zsezim
